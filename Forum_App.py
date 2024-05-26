@@ -1,3 +1,13 @@
+from helpers.auth_helper import hash_password, check_password
+from helpers.db_helper import DatabaseHelper
+from helpers.validate_email import validate_email
+from helpers.validate_password import validate_password
+from helpers.validate_username import validate_username
+from helpers.validate_post_content import validate_post_content
+from helpers.validate_comment_content import validate_comment_content
+from entities.comment import Comment
+from entities.forum import Forum
+from entities.user import User
 import sqlite3
 import bcrypt
 
@@ -43,7 +53,31 @@ class ForumApp:
 
         self.conn.commit()
 
-
+    def filter_posts_by_user(self, username):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        SELECT Posts.PostID, Posts.Title, Posts.Content, Posts.CreatedAt, Users.Username
+        FROM Posts
+        JOIN Users ON Posts.UserID = Users.UserID
+        WHERE Users.Username = ?
+        ''', (username,))
+        return cursor.fetchall()
+    
+    def get_member_list(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT Username FROM Users")
+        members = cursor.fetchall()
+        return members
+    
+    def filter_posts_by_keyword(self, keyword):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        SELECT Posts.PostID, Posts.Title, Posts.Content, Posts.CreatedAt, Users.Username
+        FROM Posts
+        JOIN Users ON Posts.UserID = Users.UserID
+        WHERE Posts.Title LIKE ? OR Posts.Content LIKE ?
+        ''', (f'%{keyword}%', f'%{keyword}%'))
+        return cursor.fetchall()
     def register_user(self, username, email, password):
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM Users WHERE Email = ?", (email,))
@@ -79,7 +113,19 @@ class ForumApp:
             self.conn.commit()
             return True
         return False
+    
+    def check_user_post(self, post_id, user_id):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM Posts WHERE PostID = ? AND UserID = ?", (post_id, user_id))
+        post = cursor.fetchone()
+        return post is not None
 
+    def update_post(self, post_id, user_id, new_title, new_content):
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE Posts SET Title = ?, Content = ? WHERE PostID = ? AND UserID = ?", (new_title, new_content, post_id, user_id))
+        self.conn.commit()
+        return cursor.rowcount > 0
+    
     def get_user_posts(self, user_id):
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM Posts WHERE UserID = ?", (user_id,))

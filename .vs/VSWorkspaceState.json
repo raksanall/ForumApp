@@ -2,9 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\controllers",
-    "\\database",
-    "\\models"
+    "\\helpers"
   ],
-  "SelectedNode": "\\models\\forum.py",
+  "SelectedNode": "\\.gitignore",
   "PreviewInSolutionExplorer": false
 }
